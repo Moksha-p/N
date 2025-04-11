@@ -3,7 +3,7 @@ name: Build and Push Container
 on:
   workflow_dispatch:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
     paths:
       - "Dockerfile.production"
       - "compose.prod.yaml"
@@ -16,9 +16,9 @@ on:
       - .github/workflows/build.yaml
 
 env:
-#   DOCKER_IMAGE: codingforentrepreneurs/reflex-gpt
+  # DOCKER_IMAGE: codingforentrepreneurs/reflex-gpt
   # uncomment if using 
-  DOCKER_IMAGE: ${{secrets.DOCKERHUB_REPO }}
+  DOCKER_IMAGE: ${{ secrets.DOCKERHUB_REPO }}
 
 jobs:
   build-and-push:
