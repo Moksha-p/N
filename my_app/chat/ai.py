@@ -59,7 +59,9 @@ print("Current Working Directory:", os.getcwd())
 print("find_dotenv() found:", find_dotenv())
 
 # Set the path to the .env file
-dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
+# dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
+dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..',  '.env'))
 
 # Print the path of the .env file
 print("Looking for .env at:", dotenv_path)
@@ -79,7 +81,7 @@ if not OPEN_API_KEY:
 
 # Print for debugging
 print("OPENAI_API_KEY is set:", bool(OPEN_API_KEY))
-print("DATABASE_URL:", bool(DATABASE_URL)) 
+
 
 # Initialize OpenAI client with the correct API key
 client = OpenAI(api_key=OPEN_API_KEY)
