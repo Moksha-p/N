@@ -3,3 +3,4 @@ reflex==0.7.6
 python-decouple
 openai
 psycopg2-binary
+python-dotenv
