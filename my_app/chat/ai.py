@@ -48,43 +48,67 @@
 # # Test environment variable loading
 # print("OPENAI_API_KEY is set:", bool(OPEN_API_KEY))
 
+# import os
+# from dotenv import load_dotenv, find_dotenv, dotenv_values
+# from openai import OpenAI
+
+# # Print the current working directory for debugging
+# print("Current Working Directory:", os.getcwd())
+
+# # Check where find_dotenv() is finding the .env file
+# print("find_dotenv() found:", find_dotenv())
+
+# # Set the path to the .env file
+# # dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
+# dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..',  '.env'))
+
+# # Print the path of the .env file
+# print("Looking for .env at:", dotenv_path)
+
+# # Load environment variables from .env file
+# env_values = dotenv_values(dotenv_path)
+
+# # Print the loaded values from .env file to verify correct loading
+# print("Loaded env values:", env_values)
+
+# # Access OPENAI_API_KEY directly from env_values
+# OPEN_API_KEY = env_values.get("OPENAI_API_KEY")
+# DATABASE_URL = env_values.get("DATABASE_URL")
+# # Check if the OPENAI_API_KEY is loaded correctly
+# if not OPEN_API_KEY:
+#     raise ValueError("OPENAI_API_KEY is not set. Please check your .env file.")
+
+# # Print for debugging
+# print("OPENAI_API_KEY is set:", bool(OPEN_API_KEY))
+
+
+# # Initialize OpenAI client with the correct API key
+# client = OpenAI(api_key=OPEN_API_KEY)
+
+# def get_llm_response(gpt_messages):
+#     """Fetch response from OpenAI GPT model."""
+#     completion = client.chat.completions.create(
+#         model="gpt-4o-mini",  # Use your desired model
+#         messages=gpt_messages
+#     )
+
+#     return completion.choices[0].message.content
+
+# # Test environment variable loading
+# print("OPENAI_API_KEY is set:", bool(OPEN_API_KEY))
 import os
-from dotenv import load_dotenv, find_dotenv, dotenv_values
 from openai import OpenAI
 
-# Print the current working directory for debugging
-print("Current Working Directory:", os.getcwd())
+# Directly access environment variables
+try:
+    OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
+    DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///reflex.db")  # Fallback for local dev
+except KeyError as e:
+    raise ValueError(f"Missing required environment variable: {e}") from None
 
-# Check where find_dotenv() is finding the .env file
-print("find_dotenv() found:", find_dotenv())
-
-# Set the path to the .env file
-# dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
-
-dotenv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..',  '.env'))
-
-# Print the path of the .env file
-print("Looking for .env at:", dotenv_path)
-
-# Load environment variables from .env file
-env_values = dotenv_values(dotenv_path)
-
-# Print the loaded values from .env file to verify correct loading
-print("Loaded env values:", env_values)
-
-# Access OPENAI_API_KEY directly from env_values
-OPEN_API_KEY = env_values.get("OPENAI_API_KEY")
-DATABASE_URL = env_values.get("DATABASE_URL")
-# Check if the OPENAI_API_KEY is loaded correctly
-if not OPEN_API_KEY:
-    raise ValueError("OPENAI_API_KEY is not set. Please check your .env file.")
-
-# Print for debugging
-print("OPENAI_API_KEY is set:", bool(OPEN_API_KEY))
-
-
-# Initialize OpenAI client with the correct API key
-client = OpenAI(api_key=OPEN_API_KEY)
+# Initialize OpenAI client
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 def get_llm_response(gpt_messages):
     """Fetch response from OpenAI GPT model."""
@@ -92,8 +116,9 @@ def get_llm_response(gpt_messages):
         model="gpt-4o-mini",  # Use your desired model
         messages=gpt_messages
     )
-
     return completion.choices[0].message.content
 
-# Test environment variable loading
-print("OPENAI_API_KEY is set:", bool(OPEN_API_KEY))
+# Optional: Verification at module load (only for debugging)
+if __name__ == "__main__":
+    print("OPENAI_API_KEY verified:", bool(OPENAI_API_KEY))
+    print("DATABASE_URL:", DATABASE_URL)
