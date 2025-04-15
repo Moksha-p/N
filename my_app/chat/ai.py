@@ -72,13 +72,14 @@ print("Loaded env values:", env_values)
 
 # Access OPENAI_API_KEY directly from env_values
 OPEN_API_KEY = env_values.get("OPENAI_API_KEY")
-
+DATABASE_URL = env_values.get("DATABASE_URL")
 # Check if the OPENAI_API_KEY is loaded correctly
 if not OPEN_API_KEY:
     raise ValueError("OPENAI_API_KEY is not set. Please check your .env file.")
 
 # Print for debugging
 print("OPENAI_API_KEY is set:", bool(OPEN_API_KEY))
+print("DATABASE_URL:", bool(DATABASE_URL)) 
 
 # Initialize OpenAI client with the correct API key
 client = OpenAI(api_key=OPEN_API_KEY)
