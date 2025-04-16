@@ -178,66 +178,105 @@
 # # Application commands
 # CMD ["sh", "-c", "reflex db migrate && reflex run --env prod --backend-only"]
 
-# Production Dockerfile
-FROM python:3.12-slim as builder
+# # Production Dockerfile
+# FROM python:3.12-slim as builder
 
-# Build arguments
-ARG OPENAI_API_KEY
-ARG DATABASE_URL
+# # Build arguments
+# ARG OPENAI_API_KEY
+# ARG DATABASE_URL
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
-    libpq-dev \
-    gnupg \
-    unzip \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# # Install system dependencies
+# RUN apt-get update && apt-get install -y \
+#     curl \
+#     build-essential \
+#     libpq-dev \
+#     gnupg \
+#     unzip \
+#     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+#     && apt-get install -y nodejs \
+#     && apt-get clean \
+#     && rm -rf /var/lib/apt/lists/*
 
-# Create virtual environment
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+# # Create virtual environment
+# RUN python -m venv /opt/venv
+# ENV PATH="/opt/venv/bin:$PATH"
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# # Install Python dependencies
+# COPY requirements.txt .
+# RUN pip install --no-cache-dir -r requirements.txt
+
+# # ----------------------------
+# # Runtime stage
+# # ----------------------------
+# FROM python:3.12-slim as runtime
+
+# # Runtime arguments (MUST redeclare)
+# ARG OPENAI_API_KEY
+# ARG DATABASE_URL
+
+# # Set environment variables
+# ENV OPENAI_API_KEY=$OPENAI_API_KEY \
+#     DATABASE_URL=$DATABASE_URL \
+#     REFLEX_ENV_MODE=prod \
+#     NODE_ENV=production \
+#     PYTHONUNBUFFERED=1
+
+# WORKDIR /app
+
+# # Install runtime dependencies
+# RUN apt-get update && apt-get install -y \
+#     libpq5 \
+#     && rm -rf /var/lib/apt/lists/*
+
+# # Copy virtual environment
+# COPY --from=builder /opt/venv /opt/venv
+# ENV PATH="/opt/venv/bin:$PATH"
+
+# # Create non-root user
+# RUN adduser --disabled-password --gecos '' appuser
+# USER appuser
+
+# # Copy application files
+# COPY --chown=appuser:appuser . .
+
+# # Application commands
+# CMD ["sh", "-c", "reflex db migrate && reflex run --env prod --backend-only"]
 
 # ----------------------------
-# Runtime stage
+# Runtime stage (updated)
 # ----------------------------
-FROM python:3.12-slim as runtime
+    FROM python:3.12-slim as runtime
 
-# Runtime arguments (MUST redeclare)
-ARG OPENAI_API_KEY
-ARG DATABASE_URL
-
-# Set environment variables
-ENV OPENAI_API_KEY=$OPENAI_API_KEY \
-    DATABASE_URL=$DATABASE_URL \
-    REFLEX_ENV_MODE=prod \
-    NODE_ENV=production \
-    PYTHONUNBUFFERED=1
-
-WORKDIR /app
-
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy virtual environment
-COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Create non-root user
-RUN adduser --disabled-password --gecos '' appuser
-USER appuser
-
-# Copy application files
-COPY --chown=appuser:appuser . .
-
-# Application commands
-CMD ["sh", "-c", "reflex db migrate && reflex run --env prod --backend-only"]
+    # Runtime arguments
+    ARG OPENAI_API_KEY
+    ARG DATABASE_URL
+    
+    # Environment variables
+    ENV OPENAI_API_KEY=$OPENAI_API_KEY \
+        DATABASE_URL=$DATABASE_URL \
+        REFLEX_ENV_MODE=prod \
+        NODE_ENV=production \
+        PYTHONUNBUFFERED=1
+    
+    WORKDIR /app
+    
+    # Install runtime dependencies
+    RUN apt-get update && apt-get install -y \
+        libpq5 \
+        && rm -rf /var/lib/apt/lists/*
+    
+    # Copy virtual environment
+    COPY --from=builder /opt/venv /opt/venv
+    ENV PATH="/opt/venv/bin:$PATH"
+    
+    # Create non-root user and set ownership of /app
+    RUN adduser --disabled-password --gecos '' appuser \
+        && chown -R appuser:appuser /app  # Fixes permission issue
+    
+    USER appuser
+    
+    # Copy application files (already owned by appuser)
+    COPY --chown=appuser:appuser . .
+    
+    # Run the app
+    CMD ["sh", "-c", "reflex db migrate && reflex run --env prod --backend-only"]
