@@ -157,14 +157,16 @@ RUN apt-get update && apt-get install -y \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-COPY requirements.txt .
+WORKDIR /app
+
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir --upgrade reflex
 
-# Copy the rest of your app
+# ✅ Copy only the app source, not system files
 COPY . .
 
-# ⚠️ Export Reflex frontend files (generates .web with package.json)
+# ✅ Now run reflex export in the correct context
 RUN reflex export
 
 # ----------------------------
@@ -195,8 +197,6 @@ RUN adduser --disabled-password --gecos '' appuser \
 
 USER appuser
 
-# ✅ Copy app including built .web directory
 COPY --from=builder --chown=appuser:appuser /app /app
 
-# 🟢 Run Reflex app or your custom entry
 CMD ["reflex", "run", "--env", "prod"]
