@@ -76,6 +76,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
     libpq-dev \
+    nodejs \
+    npm \
     gnupg \
     unzip \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
@@ -115,6 +117,8 @@ WORKDIR /app
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
     libpq5 \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder
@@ -131,4 +135,4 @@ USER appuser
 COPY --chown=appuser:appuser . .
 
 # CMD to run app
-CMD ["uvicorn", "my_app.my_app:app", "--host", "0.0.0.0", "--port", "8000", "--limit-max-requests", "1000"]
+CMD ["uvicorn", "my_app:app", "--host", "0.0.0.0", "--port", "8000", "--limit-max-requests", "1000"]
