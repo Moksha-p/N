@@ -65,13 +65,82 @@
     # CMD ["sh", "-c", "reflex db migrate && reflex run --env prod --backend-only"]
 
 
+# FROM python:3.12-slim AS builder 
+
+# # Build arguments
+# ARG OPENAI_API_KEY
+# ARG DATABASE_URL
+
+# # Install system dependencies
+# RUN apt-get update && apt-get install -y \
+#     curl \
+#     build-essential \
+#     libpq-dev \
+#     nodejs \
+#     npm \
+#     gnupg \
+#     unzip \
+#     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+#     && apt-get install -y nodejs \
+#     && apt-get clean \
+#     && rm -rf /var/lib/apt/lists/*
+
+# # Create virtual environment
+# RUN python -m venv /opt/venv
+# ENV PATH="/opt/venv/bin:$PATH"
+
+# # Install Python dependencies
+# COPY requirements.txt .
+# RUN pip install --no-cache-dir -r requirements.txt
+
+# # ⬆️ Ensure reflex is upgraded
+# RUN pip install --no-cache-dir --upgrade reflex
+
+# # ----------------------------
+# # Runtime stage
+# # ----------------------------
+# FROM python:3.12-slim AS runtime  
+
+# # Runtime arguments
+# ARG OPENAI_API_KEY
+# ARG DATABASE_URL
+
+# # Environment variables
+# ENV OPENAI_API_KEY=$OPENAI_API_KEY \
+#     DATABASE_URL=$DATABASE_URL \
+#     REFLEX_ENV_MODE=prod \
+#     NODE_ENV=production \
+#     PYTHONUNBUFFERED=1
+
+# WORKDIR /app
+
+# # Install runtime dependencies
+# RUN apt-get update && apt-get install -y \
+#     libpq5 \
+#     nodejs \
+#     npm \
+#     && rm -rf /var/lib/apt/lists/*
+
+# # Copy virtual environment from builder
+# COPY --from=builder /opt/venv /opt/venv
+# ENV PATH="/opt/venv/bin:$PATH"
+
+# # Fix permissions
+# RUN adduser --disabled-password --gecos '' appuser \
+#     && chown -R appuser:appuser /app
+
+# USER appuser
+
+# # Copy app files
+# COPY --chown=appuser:appuser . .
+
+# # CMD to run app
+# CMD ["uvicorn", "my_app.my_app:app", "--host", "0.0.0.0", "--port", "8000", "--limit-max-requests", "1000"]
 FROM python:3.12-slim AS builder 
 
-# Build arguments
 ARG OPENAI_API_KEY
 ARG DATABASE_URL
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
@@ -85,27 +154,25 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Create virtual environment
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# ⬆️ Ensure reflex is upgraded
 RUN pip install --no-cache-dir --upgrade reflex
 
-# ----------------------------
-# Runtime stage
+# Copy the rest of your app
+COPY . .
+
+# ⚠️ Export Reflex frontend files (generates .web with package.json)
+RUN reflex export
+
 # ----------------------------
 FROM python:3.12-slim AS runtime  
 
-# Runtime arguments
 ARG OPENAI_API_KEY
 ARG DATABASE_URL
 
-# Environment variables
 ENV OPENAI_API_KEY=$OPENAI_API_KEY \
     DATABASE_URL=$DATABASE_URL \
     REFLEX_ENV_MODE=prod \
@@ -114,25 +181,22 @@ ENV OPENAI_API_KEY=$OPENAI_API_KEY \
 
 WORKDIR /app
 
-# Install runtime dependencies
 RUN apt-get update && apt-get install -y \
     libpq5 \
     nodejs \
     npm \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Fix permissions
 RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser:appuser /app
 
 USER appuser
 
-# Copy app files
-COPY --chown=appuser:appuser . .
+# ✅ Copy app including built .web directory
+COPY --from=builder --chown=appuser:appuser /app /app
 
-# CMD to run app
-CMD ["uvicorn", "my_app.my_app:app", "--host", "0.0.0.0", "--port", "8000", "--limit-max-requests", "1000"]
+# 🟢 Run Reflex app or your custom entry
+CMD ["reflex", "run", "--env", "prod"]
